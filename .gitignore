@@ -1,8 +1,10 @@
 .DS_Store
 node_modules/
-env.js
+# Environment files (actual credentials — do not commit)
 .env
 .env.local
+# Optional: ignore generated env.js if it contains real secrets
+# env.js
 dist/
 coverage/
 *.log
