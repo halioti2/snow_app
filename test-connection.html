@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Test Supabase Connection</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    body { padding: 2rem; background: #f8fafc; }
+    .test-result { margin-top: 1rem; }
+    .success { color: #28a745; }
+    .error { color: #dc3545; }
+    .loading { color: #007bff; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🔗 Supabase Connection Test</h1>
+    <p class="text-muted">Testing if your Supabase credentials are valid...</p>
+    
+    <div id="testResults" class="test-result"></div>
+    
+    <hr>
+    <h3>Connection Details</h3>
+    <pre id="envDetails" class="bg-light p-3 rounded"><loading>Loading environment...</loading></pre>
+    
+    <hr>
+    <a href="index.html" class="btn btn-primary">← Back to App</a>
+  </div>
+
+  <!-- Load environment -->
+  <script src="env.js"></script>
+  <!-- Supabase client -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  
+  <script>
+    async function testConnection() {
+      const results = document.getElementById('testResults');
+      const envDetails = document.getElementById('envDetails');
+      
+      // Show env details
+      envDetails.innerHTML = `
+        <strong>Environment Variables Loaded:</strong>
+        SUPABASE_URL: ${window.SUPABASE_URL ? '✓ Set' : '✗ Missing'}
+        SUPABASE_ANON_KEY: ${window.SUPABASE_ANON_KEY ? '✓ Set' : '✗ Missing'}
+      `;
+      
+      // Check if credentials are set
+      if (!window.SUPABASE_URL || !window.SUPABASE_ANON_KEY) {
+        results.innerHTML = `
+          <div class="alert alert-danger">
+            <h4 class="error">❌ Missing Credentials</h4>
+            <p>SUPABASE_URL or SUPABASE_ANON_KEY not set in env.js</p>
+            <p>Make sure your <code>.env</code> file is copied from <code>.env.example</code> and filled with your real Supabase credentials.</p>
+          </div>
+        `;
+        return;
+      }
+
+      // Try to initialize Supabase client
+      results.innerHTML = '<div class="loading">⏳ Testing connection...</div>';
+      
+      try {
+        const supabase = supabaseJs.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY);
+        
+        // Test 1: Check if we can connect
+        const { data: { user }, error: authError } = await supabase.auth.getUser();
+        
+        results.innerHTML += `
+          <div class="alert alert-info">
+            <h4>Auth Check</h4>
+            <p>${authError ? `No user signed in (expected): ${authError.message}` : 'User authenticated'}</p>
+          </div>
+        `;
+
+        // Test 2: Try to query profiles table
+        const { data: profiles, error: queryError } = await supabase
+          .from('profiles')
+          .select('count', { count: 'exact' });
+
+        if (queryError) {
+          results.innerHTML += `
+            <div class="alert alert-danger">
+              <h4 class="error">❌ Database Query Failed</h4>
+              <p><strong>Error:</strong> ${queryError.message}</p>
+              <p><strong>Code:</strong> ${queryError.code}</p>
+              <details>
+                <summary>Full error</summary>
+                <pre>${JSON.stringify(queryError, null, 2)}</pre>
+              </details>
+            </div>
+          `;
+        } else {
+          results.innerHTML += `
+            <div class="alert alert-success">
+              <h4 class="success">✅ Connection Successful!</h4>
+              <p>Connected to Supabase and able to query the database.</p>
+              <p><code>profiles</code> table exists and is accessible.</p>
+            </div>
+          `;
+        }
+
+        // Test 3: List tables
+        const { data: tables, error: tablesError } = await supabase
+          .from('information_schema.tables')
+          .select('table_name')
+          .eq('table_schema', 'public');
+
+        if (!tablesError && tables) {
+          const tableNames = tables.map(t => t.table_name).filter(name => 
+            ['profiles', 'jobs', 'reviews', 'chats', 'messages'].includes(name)
+          );
+          results.innerHTML += `
+            <div class="alert alert-info">
+              <h4>Tables Found</h4>
+              <p>${tableNames.length > 0 ? tableNames.join(', ') : 'No tables found'}</p>
+            </div>
+          `;
+        }
+
+      } catch (err) {
+        results.innerHTML = `
+          <div class="alert alert-danger">
+            <h4 class="error">❌ Connection Error</h4>
+            <p><strong>Error:</strong> ${err.message}</p>
+            <details>
+              <summary>Details</summary>
+              <pre>${err.stack}</pre>
+            </details>
+          </div>
+        `;
+      }
+    }
+
+    // Run test on page load
+    window.addEventListener('load', testConnection);
+  </script>
+</body>
+</html>
