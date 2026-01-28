@@ -1,0 +1,7 @@
+/* Minimal styles for SnowJobs */
+body {
+  background: #f8fafc;
+}
+#jobsContainer .card + .card {
+  margin-top: 1rem;
+}

@@ -1,0 +1,8 @@
+[build]
+  command = "bash -lc 'echo \"window.SUPABASE_URL=\\\"${SUPABASE_URL}\\\"; window.SUPABASE_ANON_KEY=\\\"${SUPABASE_ANON_KEY}\\\";\" > env.js'"
+  publish = "."
+
+[context.production.environment]
+  # Optionally set build-time environment overrides here (but better to set them in Netlify UI)
+  # SUPABASE_URL = ""
+  # SUPABASE_ANON_KEY = ""
